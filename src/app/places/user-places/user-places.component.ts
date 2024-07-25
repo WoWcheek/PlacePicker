@@ -1,8 +1,8 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 
 import { PlacesService } from '../places.service';
-import { PlacesContainerComponent } from '../places-container/places-container.component';
 import { PlacesComponent } from '../places.component';
+import { PlacesContainerComponent } from '../places-container/places-container.component';
 import type { Place } from '../place.model';
 
 @Component({
@@ -30,6 +30,14 @@ export class UserPlacesComponent {
         this.isLoadingPlaces.set(false);
       },
     });
+
+    this.destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+    });
+  }
+
+  onRemoveUserPlace(place: Place) {
+    const subscription = this.placesService.removeUserPlace(place).subscribe();
 
     this.destroyRef.onDestroy(() => {
       subscription.unsubscribe();

@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError, map, tap, throwError } from 'rxjs';
 
-import { Place } from './place.model';
+import type { Place } from './place.model';
 import { ErrorService } from '../shared/error.service';
 
 @Injectable({
@@ -66,5 +66,23 @@ export class PlacesService {
       );
   }
 
-  removeUserPlace(place: Place) {}
+  removeUserPlace(place: Place) {
+    const prevPlaces = this.userPlaces();
+
+    if (prevPlaces.some((p) => p.id === place.id)) {
+      this.userPlaces.set(prevPlaces.filter((x) => x.id !== place.id));
+    }
+
+    return this.httpClient
+      .delete(`http://localhost:3000/user-places/${place.id}`)
+      .pipe(
+        catchError(() => {
+          const errMessage =
+            'Something went wrong removing place from favorites :(';
+          this.userPlaces.set(prevPlaces);
+          this.errorService.showError(errMessage);
+          return throwError(() => new Error(errMessage));
+        })
+      );
+  }
 }
