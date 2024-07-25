@@ -1,8 +1,15 @@
-import { Component, signal } from '@angular/core';
+import {
+  Component,
+  signal,
+  inject,
+  DestroyRef,
+  type OnInit,
+} from '@angular/core';
 
-import { Place } from '../place.model';
+import { PlacesService } from '../places.service';
 import { PlacesComponent } from '../places.component';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
+import type { Place } from '../place.model';
 
 @Component({
   selector: 'app-available-places',
@@ -11,6 +18,43 @@ import { PlacesContainerComponent } from '../places-container/places-container.c
   styleUrl: './available-places.component.css',
   imports: [PlacesComponent, PlacesContainerComponent],
 })
-export class AvailablePlacesComponent {
+export class AvailablePlacesComponent implements OnInit {
+  private destroyRef = inject(DestroyRef);
+  private placesService = inject(PlacesService);
+
+  error = signal('');
+  isLoadingPlaces = signal(true);
   places = signal<Place[] | undefined>(undefined);
+
+  ngOnInit() {
+    this.isLoadingPlaces.set(true);
+
+    const subscription = this.placesService.loadAvailablePlaces().subscribe({
+      next: (places) => {
+        this.places.set(places);
+      },
+      error: (error: Error) => {
+        this.error.set(error.message);
+      },
+      complete: () => {
+        this.isLoadingPlaces.set(false);
+      },
+    });
+
+    this.destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+    });
+  }
+
+  onSelectPlace(selectedPlace: Place) {
+    const subscription = this.placesService
+      .addPlaceToUserPlaces(selectedPlace)
+      .subscribe({
+        next: (res) => {},
+      });
+
+    this.destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+    });
+  }
 }

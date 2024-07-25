@@ -1,7 +1,9 @@
-import { Component } from '@angular/core';
+import { Component, DestroyRef, inject, signal } from '@angular/core';
 
+import { PlacesService } from '../places.service';
 import { PlacesContainerComponent } from '../places-container/places-container.component';
 import { PlacesComponent } from '../places.component';
+import type { Place } from '../place.model';
 
 @Component({
   selector: 'app-user-places',
@@ -11,4 +13,26 @@ import { PlacesComponent } from '../places.component';
   imports: [PlacesContainerComponent, PlacesComponent],
 })
 export class UserPlacesComponent {
+  private destroyRef = inject(DestroyRef);
+  private placesService = inject(PlacesService);
+
+  error = signal('');
+  isLoadingPlaces = signal(true);
+  places = this.placesService.loadedUserPlaces;
+
+  ngOnInit() {
+    this.isLoadingPlaces.set(true);
+    const subscription = this.placesService.loadUserPlaces().subscribe({
+      error: (error: Error) => {
+        this.error.set(error.message);
+      },
+      complete: () => {
+        this.isLoadingPlaces.set(false);
+      },
+    });
+
+    this.destroyRef.onDestroy(() => {
+      subscription.unsubscribe();
+    });
+  }
 }
